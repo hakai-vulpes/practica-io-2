@@ -8,3 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
+
+# ipynb mio para probar cosas
+parte_1.ipynb
+
+# *.ipynb
