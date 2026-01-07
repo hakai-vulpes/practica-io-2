@@ -1,4 +1,4 @@
-# Intelligent Optimization Practice 2
+# Operational Research Practice 2
 
 This repository contains two main components developed for the Operational Research practice: **Reinforcement Learning for Racetrack** and **Image Morphing using Optimal Transport**.
 
@@ -11,7 +11,8 @@ This repository contains two main components developed for the Operational Resea
   - `mc_agent.py`: Monte Carlo Control agent (Epsilon-Greedy).
   - `main.ipynb`: Notebook for training and visualizing the agent.
 - **`face-morphing/`**: Contains the Image Morphing project.
-  - `morphing.ipynb`: Todo.
+  - `main.ipynb`: Explanations about the algorithm and example usage.
+  - `morphing.py`: Face-morphing implementation.
   - `images/`: Directory for input images used in morphing with several examples.
 
 ## Prerequisites
@@ -54,7 +55,7 @@ pip install numpy matplotlib scipy pot opencv-python pillow scikit-image ipykern
 2. Place your input images in the `images/` directory.
 3. Open `morphing.ipynb`.
 4. The functionality is the following:
-   - Detects and aligns faces from the input images.
+   - Detects and crops faces from the input images.
    - Computes the optimal transport plan between two images to generate smooth morphing transitions.
    - Displays the original images and the intermediate morphed steps.
 
