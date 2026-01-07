@@ -13,3 +13,6 @@ wheels/
 parte_1.ipynb
 
 # *.ipynb
+
+# Face detector model
+haarcascade_frontalface_default.xml
