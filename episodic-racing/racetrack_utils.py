@@ -234,3 +234,140 @@ def create_animation(env, data_subset, filename, target_duration_sec=10, title_p
     except Exception as e:
         print(f"❌ Error: {e}")
     plt.close(fig)
+
+
+
+# ctrl + k, ctrl + c
+# ctrl + k, ctrl + u
+
+# def create_static_trajectory_image(env, data_subset, filename, title="Trayectoria Final"):
+#     """
+#     Genera una imagen estática (PNG) mostrando la última trayectoria exitosa en rojo,
+#     y todos los intentos fallidos previos en gris.
+#     """
+#     if not data_subset:
+#         print(f"⚠️ No hay datos para generar la imagen {filename}")
+#         return
+
+#     print(f"Generando imagen estática: {filename}...")
+
+#     fig, ax = plt.subplots(figsize=(6, 10))
+#     ax.imshow(env.track, cmap='gray_r')
+#     ax.axis('off')
+#     ax.set_title(title, fontsize=12, weight='bold')
+
+#     # --- 1. DIBUJAR LOS "FANTASMAS" (Gris) ---
+#     # Recorremos todos los episodios EXCEPTO el último del subconjunto
+#     for i in range(len(data_subset) - 1):
+#         ep_data = data_subset[i]
+#         for segment in ep_data['segments']:
+#             xs = [p[0] for p in segment]
+#             ys = [p[1] for p in segment]
+#             ax.plot(xs, ys, color='gray', linewidth=1, alpha=0.3, zorder=1)
+
+#     # Ahora miramos el ÚLTIMO episodio del subconjunto
+#     last_ep_data = data_subset[-1]
+#     segments = last_ep_data['segments']
+
+#     # Dibujamos en gris sus intentos fallidos (todos menos el último segmento)
+#     for i in range(len(segments) - 1):
+#         segment = segments[i]
+#         xs = [p[0] for p in segment]
+#         ys = [p[1] for p in segment]
+#         ax.plot(xs, ys, color='gray', linewidth=1, alpha=0.3, zorder=1)
+
+#     # --- 2. DIBUJAR LA TRAYECTORIA FINAL (Rojo) ---
+#     # Es el último segmento del último episodio
+#     final_segment = segments[-1]
+#     fxs = [p[0] for p in final_segment]
+#     fys = [p[1] for p in final_segment]
+
+#     ax.plot(fxs, fys, 'r-', linewidth=3, label='Ruta Exitosa Final', zorder=10)
+#     # Marcamos el inicio (círculo verde) y el final (estrella roja) de esta ruta
+#     ax.plot(fxs[0], fys[0], 'go', markersize=8, zorder=11, label='Inicio')
+#     ax.plot(fxs[-1], fys[-1], 'r*', markersize=12, markeredgecolor='black', zorder=11, label='Meta')
+
+#     ax.legend(loc='lower right')
+#     plt.tight_layout()
+    
+#     # Guardar como PNG
+#     plt.savefig(filename, dpi=150, bbox_inches='tight')
+#     print(f"✅ Imagen guardada: {filename}")
+#     plt.close(fig)
+
+
+
+def create_static_trajectory_image(env, data_subset, filename, title="Trayectoria Final"):
+    """
+    Genera una imagen estática (PNG) inteligente.
+    - Busca y resalta en ROJO el último trayecto que llegó a META.
+    - Si ninguno llegó, resalta el último intento y lo marca como "Fin (Tiempo)".
+    - El resto de intentos se dibujan en GRIS.
+    """
+    if not data_subset:
+        print(f"⚠️ No hay datos para generar la imagen {filename}")
+        return
+
+    print(f"Generando imagen estática inteligente: {filename}...")
+
+    fig, ax = plt.subplots(figsize=(6, 10))
+    ax.imshow(env.track, cmap='gray_r')
+    ax.axis('off')
+    ax.set_title(title, fontsize=12, weight='bold')
+
+    # --- 1. DIBUJAR EPISODIOS PREVIOS ENTEROS (Si hay) EN GRIS ---
+    for i in range(len(data_subset) - 1):
+        ep_data = data_subset[i]
+        for segment in ep_data['segments']:
+            xs = [p[0] for p in segment]
+            ys = [p[1] for p in segment]
+            ax.plot(xs, ys, color='gray', linewidth=1, alpha=0.3, zorder=1)
+
+    # --- 2. PROCESAR EL EPISODIO OBJETIVO (El último del subset) ---
+    target_ep_data = data_subset[-1]
+    segments = target_ep_data['segments']
+
+    # A) Identificar cuál es el segmento "ganador" (el que dibujaremos en rojo)
+    successful_segments_indices = []
+    for i, segment in enumerate(segments):
+        # Miramos el último punto del segmento
+        lx, ly = segment[-1]
+        # Verificamos si está dentro del mapa y si es una casilla de META (valor 3)
+        if 0 <= ly < env.height and 0 <= lx < env.width and env.track[ly, lx] == 3:
+            successful_segments_indices.append(i)
+
+    if successful_segments_indices:
+        # CASO ÉXITO: Si hubo algún trayecto que llegó a meta, elegimos el último de ellos.
+        final_idx = successful_segments_indices[-1]
+        is_successful_run = True
+    else:
+        # CASO TIMEOUT: Si ninguno llegó, el "final" es simplemente el último intento que se hizo.
+        final_idx = len(segments) - 1
+        is_successful_run = False
+
+    # B) Dibujar los segmentos de este episodio
+    for i, segment in enumerate(segments):
+        xs = [p[0] for p in segment]
+        ys = [p[1] for p in segment]
+
+        if i == final_idx:
+            # --- ESTE ES EL SEGMENTO A RESALTAR EN ROJO ---
+            label_ruta = 'Ruta Exitosa' if is_successful_run else 'Último Intento (Fallido)'
+            ax.plot(xs, ys, 'r-', linewidth=3, label=label_ruta, zorder=10)
+            ax.plot(xs[0], ys[0], 'go', markersize=8, zorder=11, label='Inicio')
+
+            if is_successful_run:
+                # Si llegó a meta: Estrella Roja y label "Meta"
+                ax.plot(xs[-1], ys[-1], 'r*', markersize=12, markeredgecolor='black', zorder=11, label='Meta')
+            else:
+                # Si NO llegó a meta (timeout): Una 'X' roja y label distinto
+                ax.plot(xs[-1], ys[-1], 'rX', markersize=10, markeredgecolor='black', zorder=11, label='Fin (Tiempo)')
+        else:
+            # --- RESTO DE SEGMENTOS EN GRIS ---
+            ax.plot(xs, ys, color='gray', linewidth=1, alpha=0.3, zorder=1)
+
+    ax.legend(loc='lower right', frameon=True, facecolor='white', framealpha=0.9)
+    plt.tight_layout()
+    plt.savefig(filename, dpi=150, bbox_inches='tight')
+    print(f"✅ Imagen guardada: {filename}")
+    plt.close(fig)
